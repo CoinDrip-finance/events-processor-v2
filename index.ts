@@ -124,6 +124,8 @@ const processTransactions = async (transactions) => {
 const run = async () => {
   const transactions = await getLastTransactionsWithLogs();
 
+  console.log(`Processing ${transactions.length} transactions`);
+
   const events = await processTransactions(transactions);
 
   try {
