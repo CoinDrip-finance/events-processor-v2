@@ -1,9 +1,7 @@
-import axios from 'axios';
 import BigNumber from 'bignumber.js';
+import { WebSocket } from 'ws';
 
 import { insertCancelStreamEvents, insertClaimEvents, insertCreateStreamEvents } from './supabase';
-
-const cron = require("node-cron");
 
 const allowedFunctions = ["createStream", "claimFromStream", "cancelStream", "claimFromStreamAfterCancel"];
 const allowedEvents = ["createStream", "claimFromStream", "cancelStream"];
@@ -73,60 +71,33 @@ const decodeMethods = {
   cancelStream: decodeCancelStreamEvent,
 };
 
-let lastScanTimestamp = null;
-
-const getLastTransactionsWithLogs = async () => {
-  const url = lastScanTimestamp
-    ? `${process.env.API_URL}/transactions?receiver=${process.env.SC_ADDRESS}&status=success&withLogs=true&order=desc&after=${lastScanTimestamp}`
-    : `${process.env.API_URL}/transactions?receiver=${process.env.SC_ADDRESS}&status=success&withLogs=true&order=desc`;
-  const { data } = await axios.get(url);
-
-  if (!data?.length) return [];
-
-  lastScanTimestamp = data[0].timestamp + 1;
-
-  return data.filter((e) => allowedFunctions.includes(e?.function));
-};
-
-const processTransactions = async (transactions) => {
+const processEvents = (_events) => {
   const parsedEvents = {
     createStream: [],
     claimFromStream: [],
     cancelStream: [],
   };
 
-  for (let i = 0; i < transactions.length; i++) {
-    const tx = transactions[i];
-    const events = tx?.logs?.events;
+  const eventsToParse = parseEvents(_events);
 
-    if (events) {
-      const eventsToParse = parseEvents(events);
+  eventsToParse.forEach((e) => {
+    e.decoded = decodeMethods[e.eventName](e);
 
-      eventsToParse?.forEach((event) => {
-        try {
-          event.decoded = decodeMethods[event.eventName](event);
-
-          if (event.decoded)
-            parsedEvents[event.eventName]?.push({
-              ...event,
-              hash: tx.txHash,
-            });
-        } catch (e) {
-          console.log(e);
-        }
+    if (e.decoded) {
+      parsedEvents[e.eventName]?.push({
+        ...e,
+        hash: e.txHash,
       });
     }
-  }
+  });
 
   return parsedEvents;
 };
 
-const run = async () => {
-  const transactions = await getLastTransactionsWithLogs();
+const run = async (_events) => {
+  console.log(`Processing ${_events.length} event(s)`);
 
-  console.log(`Processing ${transactions.length} transactions`);
-
-  const events = await processTransactions(transactions);
+  const events = processEvents(_events);
 
   try {
     if (events?.createStream?.length) {
@@ -143,4 +114,26 @@ const run = async () => {
   }
 };
 
-cron.schedule("* * * * * *", run);
+const ws = new WebSocket(process.env.WS_URL);
+
+ws.on("open", function open() {
+  console.log("CoinDrip event listener started");
+
+  ws.send(
+    JSON.stringify({
+      subscriptionEntries: [
+        {
+          address: process.env.SC_ADDRESS,
+        },
+      ],
+    })
+  );
+});
+
+ws.on("message", function message(data) {
+  const events = JSON.parse(data.toString("utf-8")).data;
+
+  if (events?.length) {
+    run(events);
+  }
+});
