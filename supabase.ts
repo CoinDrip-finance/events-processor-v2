@@ -7,6 +7,8 @@ import { getTokenData } from './api';
 
 export const supabase = createClient(process.env.SUPABASE_URL as string, process.env.SUPABASE_SERVICE_ROLE as string);
 
+const TABLE_PREFIX = process.env.TABLE_PREFIX || "";
+
 export const insertCreateStreamEvents = async (eventsList) => {
   const eventsToInsert = [];
   for (let i = 0; i < eventsList.length; i++) {
@@ -22,7 +24,7 @@ export const insertCreateStreamEvents = async (eventsList) => {
     eventsToInsert.push(toInsert);
   }
 
-  await supabase.from("devnet_streams").upsert(eventsToInsert, { ignoreDuplicates: true });
+  await supabase.from(`${TABLE_PREFIX}streams`).upsert(eventsToInsert, { ignoreDuplicates: true });
 };
 
 export const insertCancelStreamEvents = async (eventsList) => {
@@ -35,12 +37,12 @@ export const insertCancelStreamEvents = async (eventsList) => {
     };
   });
 
-  await supabase.from("devnet_canceled_streams").upsert(eventsToInsert, { ignoreDuplicates: true });
+  await supabase.from(`${TABLE_PREFIX}canceled_streams`).upsert(eventsToInsert, { ignoreDuplicates: true });
 
   for (let i = 0; i < eventsToInsert.length; i++) {
     const event = eventsToInsert[i];
 
-    await supabase.from("devnet_streams").update({ status: EventStatus.CANCELLED }).eq("id", event.id);
+    await supabase.from(`${TABLE_PREFIX}streams`).update({ status: EventStatus.CANCELLED }).eq("id", event.id);
   }
 };
 
@@ -53,12 +55,12 @@ export const insertClaimEvents = async (eventsList) => {
     };
   });
 
-  await supabase.from("devnet_stream_claims").upsert(eventsToInsert, { ignoreDuplicates: true });
+  await supabase.from(`${TABLE_PREFIX}stream_claims`).upsert(eventsToInsert, { ignoreDuplicates: true });
 
   const finalizedClaims = eventsList.filter((e) => e.decoded.finalized).map((e) => e.decoded.streamId);
   for (let i = 0; i < finalizedClaims.length; i++) {
     const streamId = finalizedClaims[i];
 
-    await supabase.from("devnet_streams").update({ status: EventStatus.FINALIZED }).eq("id", streamId);
+    await supabase.from(`${TABLE_PREFIX}streams`).update({ status: EventStatus.FINALIZED }).eq("id", streamId);
   }
 };
