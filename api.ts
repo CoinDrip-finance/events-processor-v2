@@ -15,7 +15,7 @@ export const getTokenData = async (tokenIdentifier: string) => {
         data: { returnData },
       },
     },
-  } = await axios.post(`${process.env.GATEWAY_URL}/query`, {
+  } = await axios.post(`${process.env.GATEWAY_URL}/vm-values/query`, {
     scAddress: "erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzllls8a5w6u",
     funcName: "getTokenProperties",
     args: [Buffer.from(tokenIdentifier, "utf-8").toString("hex")],

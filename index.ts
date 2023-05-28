@@ -16,6 +16,8 @@ ws.on("open", function open() {
       ],
     })
   );
+}).on("error", function (e) {
+  console.log("connection error", e);
 });
 
 ws.on("message", function message(data) {
