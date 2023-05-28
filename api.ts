@@ -1,6 +1,6 @@
-import 'dotenv/config';
+import "dotenv/config";
 
-import axios from 'axios';
+import axios from "axios";
 
 export const getTokenData = async (tokenIdentifier: string) => {
   if (tokenIdentifier === "EGLD") {
@@ -15,7 +15,7 @@ export const getTokenData = async (tokenIdentifier: string) => {
         data: { returnData },
       },
     },
-  } = await axios.post(`${process.env.GATEWAY_URL}/vm-values/query`, {
+  } = await axios.post(`${process.env.GATEWAY_URL}/query`, {
     scAddress: "erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzllls8a5w6u",
     funcName: "getTokenProperties",
     args: [Buffer.from(tokenIdentifier, "utf-8").toString("hex")],
