@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
-    "experimentalDecorators": true,
-    "target": "es2015",
+    "target": "es5",
     "module": "commonjs",
-    "declaration": true,
-    "outDir": "./lib",
-    "baseUrl": "./",
-    "strict": false
-  },
-  "exclude": ["node_modules", "**/__tests__/*"]
+    "lib": ["es6"],
+    "allowJs": true,
+    "outDir": "build",
+    "rootDir": "src",
+    "strict": true,
+    "noImplicitAny": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  }
 }

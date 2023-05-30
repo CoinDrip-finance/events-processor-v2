@@ -2,7 +2,7 @@ import { WebSocket } from "ws";
 
 import { run } from "./events";
 
-const ws = new WebSocket(process.env.WS_URL);
+const ws = new WebSocket(process.env.WS_URL as string);
 
 ws.on("open", function open() {
   console.log("CoinDrip event listener started");
