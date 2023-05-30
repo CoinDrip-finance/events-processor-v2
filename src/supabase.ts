@@ -9,7 +9,7 @@ export const supabase = createClient(process.env.SUPABASE_URL as string, process
 
 const TABLE_PREFIX = process.env.TABLE_PREFIX || "";
 
-export const insertCreateStreamEvents = async (eventsList) => {
+export const insertCreateStreamEvents = async (eventsList: any[]) => {
   const eventsToInsert = [];
   for (let i = 0; i < eventsList.length; i++) {
     const event = eventsList[i];
@@ -27,7 +27,7 @@ export const insertCreateStreamEvents = async (eventsList) => {
   await supabase.from(`${TABLE_PREFIX}streams`).upsert(eventsToInsert, { ignoreDuplicates: true });
 };
 
-export const insertCancelStreamEvents = async (eventsList) => {
+export const insertCancelStreamEvents = async (eventsList: any[]) => {
   const eventsToInsert = eventsList.map((event) => {
     return {
       id: event.decoded.streamId,
@@ -46,7 +46,7 @@ export const insertCancelStreamEvents = async (eventsList) => {
   }
 };
 
-export const insertClaimEvents = async (eventsList) => {
+export const insertClaimEvents = async (eventsList: any[]) => {
   const eventsToInsert = eventsList.map((event) => {
     return {
       id: event.decoded.streamId,

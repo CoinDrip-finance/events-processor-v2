@@ -11,7 +11,7 @@ export enum EventStatus {
   FINALIZED = "finalized",
 }
 
-const parseEvents = (events) => {
+const parseEvents = (events: any[]) => {
   const eventsToParse = events.filter((e) => allowedFunctions.includes(e.identifier));
 
   return eventsToParse.map((e) => {
@@ -20,9 +20,9 @@ const parseEvents = (events) => {
   });
 };
 
-const decodeBase64Number = (base64Str) => parseInt(Buffer.from(base64Str, "base64").toString("hex"), 16);
+const decodeBase64Number = (base64Str: string) => parseInt(Buffer.from(base64Str, "base64").toString("hex"), 16);
 
-const decodeCreateStreamEvent = (event) => {
+const decodeCreateStreamEvent = (event: any) => {
   const [_eventName, _streamId, _sender, _recipient, _payment_token, _payment_nonce, _deposit, _start_time, _end_time] =
     event.topics;
 
@@ -39,7 +39,7 @@ const decodeCreateStreamEvent = (event) => {
     end_time: new Date(decodeBase64Number(_end_time) * 1000),
   };
 };
-const decodeClaimFromStreamEvent = (event) => {
+const decodeClaimFromStreamEvent = (event: any) => {
   const [_eventName, _streamId, _amount, _finalized] = event.topics;
 
   const eventName = Buffer.from(_eventName, "base64").toString("utf-8");
@@ -51,7 +51,7 @@ const decodeClaimFromStreamEvent = (event) => {
     finalized: _finalized ? Buffer.from(_finalized, "base64").toString("hex") === "01" : false,
   };
 };
-const decodeCancelStreamEvent = (event) => {
+const decodeCancelStreamEvent = (event: any) => {
   const [_eventName, _streamId, _canceledBy, _claimedAmount] = event.topics;
 
   const eventName = Buffer.from(_eventName, "base64").toString("utf-8");
@@ -70,8 +70,8 @@ const decodeMethods = {
   cancelStream: decodeCancelStreamEvent,
 };
 
-const processEvents = (_events) => {
-  const parsedEvents = {
+const processEvents = (_events: any[]) => {
+  const parsedEvents: any = {
     createStream: [],
     claimFromStream: [],
     cancelStream: [],
@@ -80,9 +80,11 @@ const processEvents = (_events) => {
   const eventsToParse = parseEvents(_events);
 
   eventsToParse.forEach((e) => {
+    // @ts-ignore
     e.decoded = decodeMethods[e.eventName](e);
 
     if (e.decoded) {
+      // @ts-ignore
       parsedEvents[e.eventName]?.push({
         ...e,
         hash: e.txHash,
@@ -93,7 +95,7 @@ const processEvents = (_events) => {
   return parsedEvents;
 };
 
-export const run = async (_events) => {
+export const run = async (_events: any[]) => {
   console.log(`Processing ${_events.length} event(s)`);
 
   const events = processEvents(_events);
