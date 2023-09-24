@@ -1,29 +1,25 @@
-import { WebSocket } from "ws";
+import "dotenv/config";
 
 import { run } from "./events";
 
-const ws = new WebSocket(process.env.WS_URL as string);
+const amqplib = require("amqplib");
 
-ws.on("open", function open() {
-  console.log("CoinDrip event listener started");
+(async () => {
+  const queue = process.env.RABBIT_QUEUE;
+  const connection = await amqplib.connect(process.env.RABBIT_CONNECTION_STRING);
 
-  ws.send(
-    JSON.stringify({
-      subscriptionEntries: [
-        {
-          address: process.env.SC_ADDRESS,
-        },
-      ],
-    })
-  );
-}).on("error", function (e) {
-  console.log("connection error", e);
-});
+  const channel = await connection.createChannel();
+  await channel.checkQueue(queue);
 
-ws.on("message", function message(data) {
-  const events = JSON.parse(data.toString("utf-8")).data;
+  channel.consume(queue, (msg: any) => {
+    if (msg !== null) {
+      const { events } = JSON.parse(msg.content.toString());
+      console.log(events);
+      if (events?.length > 0) {
+        run(events);
+      }
 
-  if (events?.length) {
-    run(events);
-  }
-});
+      channel.ack(msg);
+    }
+  });
+})();

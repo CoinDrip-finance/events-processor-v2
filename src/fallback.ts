@@ -93,12 +93,12 @@ export const cronFallback = async () => {
       }
 
       await supabaseAdmin.from("transactions").insert({ hash: transaction.txHash });
-      //   console.log(`Processed action ${transaction.txHash}`);
+      console.log(`Processed action ${transaction.txHash}`);
     }
   }
 };
 
 cronFallback();
-cron.schedule("*/1 * * * *", () => {
-  cronFallback();
-});
+// cron.schedule("*/1 * * * *", () => {
+//   cronFallback();
+// });
