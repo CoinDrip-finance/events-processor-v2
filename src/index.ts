@@ -14,7 +14,7 @@ const amqplib = require("amqplib");
   channel.consume(queue, (msg: any) => {
     if (msg !== null) {
       const { events } = JSON.parse(msg.content.toString());
-      console.log(events);
+
       if (events?.length > 0) {
         run(events);
       }
