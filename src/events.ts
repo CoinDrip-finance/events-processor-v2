@@ -1,9 +1,16 @@
-import BigNumber from "bignumber.js";
+import converter from 'bech32-converting';
+import BigNumber from 'bignumber.js';
 
-import { insertCancelStreamEvents, insertClaimEvents, insertCreateStreamEvents } from "./supabase";
+import { insertCancelStreamEvents, insertClaimEvents, insertCreateStreamEvents, insertFinishedEvents } from './supabase';
 
-const allowedFunctions = ["createStream", "claimFromStream", "cancelStream", "claimFromStreamAfterCancel"];
-const allowedEvents = ["createStream", "claimFromStream", "cancelStream"];
+const allowedFunctions = [
+  "createStream",
+  "createStreamDuration",
+  "claimFromStream",
+  "cancelStream",
+  "claimFromStreamAfterCancel",
+];
+const allowedEvents = ["createStream", "claimFromStream", "cancelStream", "finishedStream"];
 
 export enum EventStatus {
   ACTIVE = "active",
@@ -20,27 +27,47 @@ const parseEvents = (events: any[]) => {
   });
 };
 
-const decodeBase64Number = (base64Str: string) => parseInt(Buffer.from(base64Str, "base64").toString("hex"), 16);
+const decodeBase64Number = (base64Str: string) =>
+  base64Str ? parseInt(Buffer.from(base64Str, "base64").toString("hex"), 16) : 0;
 
 const decodeCreateStreamEvent = (event: any) => {
-  const [_eventName, _streamId, _sender, _recipient, _payment_token, _payment_nonce, _deposit, _start_time, _end_time] =
-    event.topics;
+  const [
+    _eventName,
+    _sender,
+    _recipient,
+    _stream_nft_token_identifier,
+    _stream_nft_token_nonce,
+    _payment_token,
+    _payment_nonce,
+    _deposit,
+    _deposit_with_fees,
+    _start_time,
+    _end_time,
+    _can_cancel,
+    _cliff,
+  ] = event.topics;
 
   const eventName = Buffer.from(_eventName, "base64").toString("utf-8");
   if (!allowedEvents.includes(eventName)) return null;
 
   return {
-    id: decodeBase64Number(_streamId),
-    sender: Buffer.from(_sender, "base64").toString("hex"),
-    recipient: Buffer.from(_recipient, "base64").toString("hex"),
+    id: decodeBase64Number(_stream_nft_token_nonce),
+    sender: converter("erd").toBech32(Buffer.from(_sender, "base64").toString("hex")),
+    recipient: converter("erd").toBech32(Buffer.from(_recipient, "base64").toString("hex")),
+    stream_nft_identifier: Buffer.from(_stream_nft_token_identifier, "base64").toString("utf-8"),
+    stream_nft_nonce: decodeBase64Number(_stream_nft_token_nonce),
     payment_token: Buffer.from(_payment_token, "base64").toString("utf-8"),
+    payment_nonce: decodeBase64Number(_payment_nonce),
     deposit: BigNumber(Buffer.from(_deposit, "base64").toString("hex"), 16).toString(),
+    deposit_with_fees: BigNumber(Buffer.from(_deposit_with_fees, "base64").toString("hex"), 16).toString(),
     start_time: new Date(decodeBase64Number(_start_time) * 1000),
     end_time: new Date(decodeBase64Number(_end_time) * 1000),
+    can_cancel: _can_cancel ? Buffer.from(_can_cancel, "base64").toString("hex") === "01" : false,
+    cliff: decodeBase64Number(_cliff),
   };
 };
 const decodeClaimFromStreamEvent = (event: any) => {
-  const [_eventName, _streamId, _amount, _finalized] = event.topics;
+  const [_eventName, _streamId, _amount, _recipient] = event.topics;
 
   const eventName = Buffer.from(_eventName, "base64").toString("utf-8");
   if (!allowedEvents.includes(eventName)) return null;
@@ -48,7 +75,7 @@ const decodeClaimFromStreamEvent = (event: any) => {
   return {
     streamId: decodeBase64Number(_streamId),
     amount: BigNumber(Buffer.from(_amount, "base64").toString("hex"), 16).toString(),
-    finalized: _finalized ? Buffer.from(_finalized, "base64").toString("hex") === "01" : false,
+    recipient: converter("erd").toBech32(Buffer.from(_recipient, "base64").toString("hex")),
   };
 };
 const decodeCancelStreamEvent = (event: any) => {
@@ -59,8 +86,19 @@ const decodeCancelStreamEvent = (event: any) => {
 
   return {
     streamId: decodeBase64Number(_streamId),
-    canceledBy: Buffer.from(_canceledBy, "base64").toString("hex"),
+    canceledBy: converter("erd").toBech32(Buffer.from(_canceledBy, "base64").toString("hex")),
     claimedAmount: BigNumber(Buffer.from(_claimedAmount || "0", "base64").toString("hex"), 16).toString(),
+  };
+};
+
+const decodeFinishedStreamEvent = (event: any) => {
+  const [_eventName, _streamId] = event.topics;
+
+  const eventName = Buffer.from(_eventName, "base64").toString("utf-8");
+  if (!allowedEvents.includes(eventName)) return null;
+
+  return {
+    streamId: decodeBase64Number(_streamId),
   };
 };
 
@@ -68,6 +106,7 @@ const decodeMethods = {
   createStream: decodeCreateStreamEvent,
   claimFromStream: decodeClaimFromStreamEvent,
   cancelStream: decodeCancelStreamEvent,
+  finishedStream: decodeFinishedStreamEvent,
 };
 
 const processEvents = (_events: any[]) => {
@@ -75,6 +114,7 @@ const processEvents = (_events: any[]) => {
     createStream: [],
     claimFromStream: [],
     cancelStream: [],
+    finishedStream: [],
   };
 
   const eventsToParse = parseEvents(_events);
@@ -109,6 +149,9 @@ export const run = async (_events: any[]) => {
     }
     if (events?.claimFromStream?.length) {
       await insertClaimEvents(events.claimFromStream);
+    }
+    if (events?.finishedStream?.length) {
+      await insertFinishedEvents(events.finishedStream);
     }
   } catch (e) {
     console.log(e);
