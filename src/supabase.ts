@@ -1,9 +1,9 @@
-import 'dotenv/config';
+import "dotenv/config";
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
-import { getTokenData } from './api';
-import { EventStatus } from './events';
+import { getTokenData } from "./api";
+import { EventStatus } from "./events";
 
 export const supabase = createClient(process.env.SUPABASE_URL as string, process.env.SUPABASE_SERVICE_ROLE as string);
 
@@ -21,7 +21,6 @@ export const insertCreateStreamEvents = async (eventsList: any[]) => {
       status: EventStatus.ACTIVE,
       tx_hash: event.hash,
     };
-    console.log(toInsert);
     eventsToInsert.push(toInsert);
   }
 
