@@ -1,11 +1,16 @@
-import converter from 'bech32-converting';
-import BigNumber from 'bignumber.js';
+import converter from "bech32-converting";
+import BigNumber from "bignumber.js";
 
-import { insertCancelStreamEvents, insertClaimEvents, insertCreateStreamEvents, insertFinishedEvents } from './supabase';
+import {
+  insertCancelStreamEvents,
+  insertClaimEvents,
+  insertCreateStreamEvents,
+  insertFinishedEvents,
+} from "./supabase";
 
 const allowedFunctions = [
   "createStream",
-  "createStreamDuration",
+  "createStreamNow",
   "claimFromStream",
   "cancelStream",
   "claimFromStreamAfterCancel",
@@ -19,7 +24,9 @@ export enum EventStatus {
 }
 
 const parseEvents = (events: any[]) => {
-  const eventsToParse = events.filter((e) => allowedFunctions.includes(e.identifier));
+  const eventsToParse = events.filter(
+    (e) => e.address === process.env.SC_ADDRESS && allowedFunctions.includes(e.identifier)
+  );
 
   return eventsToParse.map((e) => {
     e.eventName = Buffer.from(e.topics[0], "base64").toString("utf-8");
