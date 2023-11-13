@@ -1,6 +1,6 @@
-import 'dotenv/config';
+import "dotenv/config";
 
-import { run } from './events';
+import { run } from "./events";
 
 const amqplib = require("amqplib");
 
