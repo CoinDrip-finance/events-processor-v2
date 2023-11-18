@@ -18,10 +18,7 @@ interface BaseDecodedEvent {
 
 interface CreateStreamEventSegment {
   amount: BigNumber;
-  exponent: {
-    numerator: BigNumber;
-    denominator: BigNumber;
-  };
+  exponent: BigNumber;
   duration: BigNumber;
 }
 

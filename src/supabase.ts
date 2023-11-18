@@ -19,10 +19,7 @@ export const insertCreateStreamEvents = async (eventsList: CreateStreamEvent[]) 
     const segments = event.segments.map((s) => {
       return {
         amount: s.amount.toString(),
-        exponent: {
-          numerator: s.exponent.numerator.toNumber(),
-          denominator: s.exponent.denominator.toNumber(),
-        },
+        exponent: s.exponent.toNumber(),
         duration: s.duration.toNumber(),
       };
     });
