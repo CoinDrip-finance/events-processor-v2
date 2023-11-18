@@ -43,7 +43,7 @@ export const insertCreateStreamEvents = async (eventsList: CreateStreamEvent[]) 
       status: EventStatus.ACTIVE,
       tx_hash: event.hash,
     };
-    console.log(toInsert, toInsert.segments);
+
     eventsToInsert.push(toInsert);
   }
 
@@ -59,8 +59,6 @@ export const insertCancelStreamEvents = async (eventsList: CancelStreamEvent[]) 
       streamed_until_cancel: event.claimed_amount.toString(),
     };
   });
-
-  console.log(eventsToInsert);
 
   await supabase.from(`${TABLE_PREFIX}canceled_streams`).upsert(eventsToInsert, { ignoreDuplicates: true });
 
