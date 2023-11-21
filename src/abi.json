@@ -1,581 +1,696 @@
 {
   "buildInfo": {
-    "rustc": {
-      "version": "1.72.0-nightly",
-      "commitHash": "8b35c0bb0f833c0077dc57006eb317edde2a2d1e",
-      "commitDate": "2023-06-08",
-      "channel": "Nightly",
-      "short": "rustc 1.72.0-nightly (8b35c0bb0 2023-06-08)"
-    },
-    "contractCrate": {
-      "name": "coindrip",
-      "version": "2.0.0-beta"
-    },
-    "framework": {
-      "name": "multiversx-sc",
-      "version": "0.43.4"
-    }
+      "rustc": {
+          "version": "1.72.0-nightly",
+          "commitHash": "8b35c0bb0f833c0077dc57006eb317edde2a2d1e",
+          "commitDate": "2023-06-08",
+          "channel": "Nightly",
+          "short": "rustc 1.72.0-nightly (8b35c0bb0 2023-06-08)"
+      },
+      "contractCrate": {
+          "name": "coindrip",
+          "version": "2.0.0-beta"
+      },
+      "framework": {
+          "name": "multiversx-sc",
+          "version": "0.43.4"
+      }
   },
   "name": "CoinDrip",
   "constructor": {
-    "inputs": [
-      {
-        "name": "nft_base_uri",
-        "type": "bytes"
-      }
-    ],
-    "outputs": []
+      "inputs": [
+          {
+              "name": "nft_base_uri",
+              "type": "bytes"
+          },
+          {
+              "name": "wrap_egld_sc",
+              "type": "Address"
+          },
+          {
+              "name": "ash_aggregator_sc",
+              "type": "Address"
+          }
+      ],
+      "outputs": []
   },
   "endpoints": [
-    {
-      "name": "getStreamData",
-      "mutability": "readonly",
-      "inputs": [
-        {
-          "name": "stream_id",
-          "type": "u64"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Stream"
-        }
-      ]
-    },
-    {
-      "name": "getProtocolFee",
-      "mutability": "readonly",
-      "inputs": [
-        {
-          "name": "token",
-          "type": "EgldOrEsdtTokenIdentifier"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "BigUint"
-        }
-      ]
-    },
-    {
-      "name": "createStreamNow",
-      "mutability": "mutable",
-      "payableInTokens": ["*"],
-      "inputs": [
-        {
-          "name": "recipient",
-          "type": "Address"
-        },
-        {
-          "name": "segments",
-          "type": "List<Segment>"
-        },
-        {
-          "name": "cliff_opt",
-          "type": "optional<u64>",
-          "multi_arg": true
-        },
-        {
-          "name": "can_cancel_opt",
-          "type": "optional<bool>",
-          "multi_arg": true
-        },
-        {
-          "name": "broker_opt",
-          "type": "optional<BrokerFee>",
-          "multi_arg": true
-        }
-      ],
-      "outputs": [
-        {
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "createStream",
-      "mutability": "mutable",
-      "payableInTokens": ["*"],
-      "inputs": [
-        {
-          "name": "recipient",
-          "type": "Address"
-        },
-        {
-          "name": "start_time",
-          "type": "u64"
-        },
-        {
-          "name": "segments",
-          "type": "List<Segment>"
-        },
-        {
-          "name": "cliff_opt",
-          "type": "optional<u64>",
-          "multi_arg": true
-        },
-        {
-          "name": "can_cancel_opt",
-          "type": "optional<bool>",
-          "multi_arg": true
-        },
-        {
-          "name": "broker_opt",
-          "type": "optional<BrokerFee>",
-          "multi_arg": true
-        }
-      ],
-      "outputs": [
-        {
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "docs": [
-        "",
-        "Calculates the entire streamed amount until the current time",
-        "|************|--|",
-        "S            C  E",
-        "S = start time",
-        "C = current time",
-        "E = end time",
-        "The zone marked with \"****...\" represents the streamed amount"
-      ],
-      "name": "streamedAmount",
-      "mutability": "readonly",
-      "inputs": [
-        {
-          "name": "stream_id",
-          "type": "u64"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "BigUint"
-        }
-      ]
-    },
-    {
-      "docs": [
-        "",
-        "Calculates the recipient balance based on the amount stream so far and the already claimed amount",
-        "|xxxx|*******|--|",
-        "S            C  E",
-        "S = start time",
-        "xxxx = already claimed amount",
-        "C = current time",
-        "E = end time",
-        "The zone marked with \"****...\" represents the recipient balance"
-      ],
-      "name": "recipientBalance",
-      "mutability": "readonly",
-      "inputs": [
-        {
-          "name": "stream_id",
-          "type": "u64"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "BigUint"
-        }
-      ]
-    },
-    {
-      "docs": [
-        "Calculates the sender balance based on the recipient balance and the claimed balance",
-        "|----|-------|**|",
-        "S   L.C      C  E",
-        "S = start time",
-        "L.C = last claimed amount",
-        "C = current time",
-        "E = end time",
-        "The zone marked with \"**\" represents the sender balance"
-      ],
-      "name": "senderBalance",
-      "mutability": "readonly",
-      "inputs": [
-        {
-          "name": "stream_id",
-          "type": "u64"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "BigUint"
-        }
-      ]
-    },
-    {
-      "docs": ["This endpoint can be used by the recipient of the stream to claim the stream amount of tokens"],
-      "name": "claimFromStream",
-      "mutability": "mutable",
-      "payableInTokens": ["*"],
-      "inputs": [
-        {
-          "name": "stream_id",
-          "type": "u64"
-        }
-      ],
-      "outputs": []
-    },
-    {
-      "docs": [
-        "This endpoint can be used the by sender or recipient of a stream to cancel the stream.",
-        "!!! The stream needs to be cancelable (a property that is set when the stream is created by the sender)"
-      ],
-      "name": "cancelStream",
-      "mutability": "mutable",
-      "payableInTokens": ["*"],
-      "inputs": [
-        {
-          "name": "stream_id",
-          "type": "u64"
-        },
-        {
-          "name": "_with_claim",
-          "type": "optional<bool>",
-          "multi_arg": true
-        }
-      ],
-      "outputs": []
-    },
-    {
-      "docs": [
-        "After a stream was cancelled, you can call this endpoint to claim the streamed tokens as a recipient or the remaining tokens as a sender",
-        "This endpoint is especially helpful when the recipient/sender is a non-payable smart contract",
-        "For convenience, this endpoint is automatically called by default from the cancel_stream endpoint (is not instructed otherwise by the \"_with_claim\" param)"
-      ],
-      "name": "claimFromStreamAfterCancel",
-      "mutability": "mutable",
-      "payableInTokens": ["*"],
-      "inputs": [
-        {
-          "name": "stream_id",
-          "type": "u64"
-        }
-      ],
-      "outputs": []
-    },
-    {
-      "docs": ["This endpoint can be used the by sender to make the stream non-cancelable"],
-      "name": "renounceCancelStream",
-      "mutability": "mutable",
-      "inputs": [
-        {
-          "name": "stream_id",
-          "type": "u64"
-        }
-      ],
-      "outputs": []
-    },
-    {
-      "name": "setProtocolFee",
-      "onlyOwner": true,
-      "mutability": "mutable",
-      "inputs": [
-        {
-          "name": "token",
-          "type": "EgldOrEsdtTokenIdentifier"
-        },
-        {
-          "name": "value",
-          "type": "BigUint"
-        }
-      ],
-      "outputs": []
-    },
-    {
-      "name": "removeProtocolFee",
-      "onlyOwner": true,
-      "mutability": "mutable",
-      "inputs": [
-        {
-          "name": "token",
-          "type": "EgldOrEsdtTokenIdentifier"
-        }
-      ],
-      "outputs": []
-    },
-    {
-      "name": "getStatusOf",
-      "mutability": "readonly",
-      "inputs": [
-        {
-          "name": "stream_id",
-          "type": "u64"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "Status"
-        }
-      ]
-    },
-    {
-      "name": "issueToken",
-      "onlyOwner": true,
-      "mutability": "mutable",
-      "payableInTokens": ["EGLD"],
-      "inputs": [],
-      "outputs": []
-    }
+      {
+          "name": "getStreamData",
+          "mutability": "readonly",
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64"
+              }
+          ],
+          "outputs": [
+              {
+                  "type": "Stream"
+              }
+          ]
+      },
+      {
+          "name": "getProtocolFee",
+          "mutability": "readonly",
+          "inputs": [
+              {
+                  "name": "token",
+                  "type": "EgldOrEsdtTokenIdentifier"
+              }
+          ],
+          "outputs": [
+              {
+                  "type": "BigUint"
+              }
+          ]
+      },
+      {
+          "name": "getAshAggregatorSc",
+          "mutability": "readonly",
+          "inputs": [],
+          "outputs": [
+              {
+                  "type": "Address"
+              }
+          ]
+      },
+      {
+          "name": "getWrapEgldSc",
+          "mutability": "readonly",
+          "inputs": [],
+          "outputs": [
+              {
+                  "type": "Address"
+              }
+          ]
+      },
+      {
+          "name": "createStreamNow",
+          "mutability": "mutable",
+          "payableInTokens": [
+              "*"
+          ],
+          "inputs": [
+              {
+                  "name": "recipient",
+                  "type": "Address"
+              },
+              {
+                  "name": "segments",
+                  "type": "List<Segment>"
+              },
+              {
+                  "name": "cliff_opt",
+                  "type": "optional<u64>",
+                  "multi_arg": true
+              },
+              {
+                  "name": "can_cancel_opt",
+                  "type": "optional<bool>",
+                  "multi_arg": true
+              },
+              {
+                  "name": "broker_opt",
+                  "type": "optional<BrokerFee>",
+                  "multi_arg": true
+              }
+          ],
+          "outputs": [
+              {
+                  "type": "u64"
+              }
+          ]
+      },
+      {
+          "name": "createStream",
+          "mutability": "mutable",
+          "payableInTokens": [
+              "*"
+          ],
+          "inputs": [
+              {
+                  "name": "recipient",
+                  "type": "Address"
+              },
+              {
+                  "name": "start_time",
+                  "type": "u64"
+              },
+              {
+                  "name": "segments",
+                  "type": "List<Segment>"
+              },
+              {
+                  "name": "cliff_opt",
+                  "type": "optional<u64>",
+                  "multi_arg": true
+              },
+              {
+                  "name": "can_cancel_opt",
+                  "type": "optional<bool>",
+                  "multi_arg": true
+              },
+              {
+                  "name": "broker_opt",
+                  "type": "optional<BrokerFee>",
+                  "multi_arg": true
+              }
+          ],
+          "outputs": [
+              {
+                  "type": "u64"
+              }
+          ]
+      },
+      {
+          "docs": [
+              "",
+              "Calculates the entire streamed amount until the current time",
+              "|************|--|",
+              "S            C  E",
+              "S = start time",
+              "C = current time",
+              "E = end time",
+              "The zone marked with \"****...\" represents the streamed amount"
+          ],
+          "name": "streamedAmount",
+          "mutability": "readonly",
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64"
+              }
+          ],
+          "outputs": [
+              {
+                  "type": "BigUint"
+              }
+          ]
+      },
+      {
+          "docs": [
+              "",
+              "Calculates the recipient balance based on the amount stream so far and the already claimed amount",
+              "|xxxx|*******|--|",
+              "S            C  E",
+              "S = start time",
+              "xxxx = already claimed amount",
+              "C = current time",
+              "E = end time",
+              "The zone marked with \"****...\" represents the recipient balance"
+          ],
+          "name": "recipientBalance",
+          "mutability": "readonly",
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64"
+              }
+          ],
+          "outputs": [
+              {
+                  "type": "BigUint"
+              }
+          ]
+      },
+      {
+          "docs": [
+              "Calculates the sender balance based on the recipient balance and the claimed balance",
+              "|----|-------|**|",
+              "S   L.C      C  E",
+              "S = start time",
+              "L.C = last claimed amount",
+              "C = current time",
+              "E = end time",
+              "The zone marked with \"**\" represents the sender balance"
+          ],
+          "name": "senderBalance",
+          "mutability": "readonly",
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64"
+              }
+          ],
+          "outputs": [
+              {
+                  "type": "BigUint"
+              }
+          ]
+      },
+      {
+          "docs": [
+              "This endpoint can be used by the recipient of the stream to claim the stream amount of tokens"
+          ],
+          "name": "claimFromStream",
+          "mutability": "mutable",
+          "payableInTokens": [
+              "*"
+          ],
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64"
+              }
+          ],
+          "outputs": []
+      },
+      {
+          "name": "claimFromStreamSwap",
+          "mutability": "mutable",
+          "payableInTokens": [
+              "*"
+          ],
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64"
+              },
+              {
+                  "name": "amount",
+                  "type": "BigUint"
+              },
+              {
+                  "name": "steps",
+                  "type": "List<AggregatorStep>"
+              },
+              {
+                  "name": "limits",
+                  "type": "List<TokenAmount>"
+              }
+          ],
+          "outputs": []
+      },
+      {
+          "docs": [
+              "This endpoint can be used the by sender or recipient of a stream to cancel the stream.",
+              "!!! The stream needs to be cancelable (a property that is set when the stream is created by the sender)"
+          ],
+          "name": "cancelStream",
+          "mutability": "mutable",
+          "payableInTokens": [
+              "*"
+          ],
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64"
+              },
+              {
+                  "name": "_with_claim",
+                  "type": "optional<bool>",
+                  "multi_arg": true
+              }
+          ],
+          "outputs": []
+      },
+      {
+          "docs": [
+              "After a stream was cancelled, you can call this endpoint to claim the streamed tokens as a recipient or the remaining tokens as a sender",
+              "This endpoint is especially helpful when the recipient/sender is a non-payable smart contract",
+              "For convenience, this endpoint is automatically called by default from the cancel_stream endpoint (is not instructed otherwise by the \"_with_claim\" param)"
+          ],
+          "name": "claimFromStreamAfterCancel",
+          "mutability": "mutable",
+          "payableInTokens": [
+              "*"
+          ],
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64"
+              }
+          ],
+          "outputs": []
+      },
+      {
+          "docs": [
+              "This endpoint can be used the by sender to make the stream non-cancelable"
+          ],
+          "name": "renounceCancelStream",
+          "mutability": "mutable",
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64"
+              }
+          ],
+          "outputs": []
+      },
+      {
+          "name": "setProtocolFee",
+          "onlyOwner": true,
+          "mutability": "mutable",
+          "inputs": [
+              {
+                  "name": "token",
+                  "type": "EgldOrEsdtTokenIdentifier"
+              },
+              {
+                  "name": "value",
+                  "type": "BigUint"
+              }
+          ],
+          "outputs": []
+      },
+      {
+          "name": "removeProtocolFee",
+          "onlyOwner": true,
+          "mutability": "mutable",
+          "inputs": [
+              {
+                  "name": "token",
+                  "type": "EgldOrEsdtTokenIdentifier"
+              }
+          ],
+          "outputs": []
+      },
+      {
+          "name": "getStatusOf",
+          "mutability": "readonly",
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64"
+              }
+          ],
+          "outputs": [
+              {
+                  "type": "Status"
+              }
+          ]
+      },
+      {
+          "name": "issueToken",
+          "onlyOwner": true,
+          "mutability": "mutable",
+          "payableInTokens": [
+              "EGLD"
+          ],
+          "inputs": [],
+          "outputs": []
+      }
   ],
   "events": [
-    {
-      "identifier": "createStream",
-      "inputs": [
-        {
-          "name": "sender",
-          "type": "Address",
-          "indexed": true
-        },
-        {
-          "name": "recipient",
-          "type": "Address",
-          "indexed": true
-        },
-        {
-          "name": "stream_token_identifier",
-          "type": "TokenIdentifier",
-          "indexed": true
-        },
-        {
-          "name": "stream_token_nonce",
-          "type": "u64",
-          "indexed": true
-        },
-        {
-          "name": "payment_token",
-          "type": "EgldOrEsdtTokenIdentifier",
-          "indexed": true
-        },
-        {
-          "name": "payment_nonce",
-          "type": "u64",
-          "indexed": true
-        },
-        {
-          "name": "deposit",
-          "type": "BigUint",
-          "indexed": true
-        },
-        {
-          "name": "deposit_with_fees",
-          "type": "BigUint",
-          "indexed": true
-        },
-        {
-          "name": "start_time",
-          "type": "u64",
-          "indexed": true
-        },
-        {
-          "name": "end_time",
-          "type": "u64",
-          "indexed": true
-        },
-        {
-          "name": "can_cancel",
-          "type": "bool",
-          "indexed": true
-        },
-        {
-          "name": "cliff",
-          "type": "u64",
-          "indexed": true
-        },
-        {
-          "name": "segments",
-          "type": "List<Segment>",
-          "indexed": true
-        }
-      ]
-    },
-    {
-      "identifier": "claimFromStream",
-      "inputs": [
-        {
-          "name": "stream_id",
-          "type": "u64",
-          "indexed": true
-        },
-        {
-          "name": "amount",
-          "type": "BigUint",
-          "indexed": true
-        },
-        {
-          "name": "recipient",
-          "type": "Address",
-          "indexed": true
-        }
-      ]
-    },
-    {
-      "identifier": "cancelStream",
-      "inputs": [
-        {
-          "name": "stream_id",
-          "type": "u64",
-          "indexed": true
-        },
-        {
-          "name": "canceled_by",
-          "type": "Address",
-          "indexed": true
-        },
-        {
-          "name": "claimed_amount",
-          "type": "BigUint",
-          "indexed": true
-        }
-      ]
-    },
-    {
-      "identifier": "finishedStream",
-      "inputs": [
-        {
-          "name": "stream_id",
-          "type": "u64",
-          "indexed": true
-        }
-      ]
-    },
-    {
-      "identifier": "renounceCancelStream",
-      "inputs": [
-        {
-          "name": "stream_id",
-          "type": "u64",
-          "indexed": true
-        }
-      ]
-    }
+      {
+          "identifier": "createStream",
+          "inputs": [
+              {
+                  "name": "sender",
+                  "type": "Address",
+                  "indexed": true
+              },
+              {
+                  "name": "recipient",
+                  "type": "Address",
+                  "indexed": true
+              },
+              {
+                  "name": "stream_token_identifier",
+                  "type": "TokenIdentifier",
+                  "indexed": true
+              },
+              {
+                  "name": "stream_token_nonce",
+                  "type": "u64",
+                  "indexed": true
+              },
+              {
+                  "name": "payment_token",
+                  "type": "EgldOrEsdtTokenIdentifier",
+                  "indexed": true
+              },
+              {
+                  "name": "payment_nonce",
+                  "type": "u64",
+                  "indexed": true
+              },
+              {
+                  "name": "deposit",
+                  "type": "BigUint",
+                  "indexed": true
+              },
+              {
+                  "name": "deposit_with_fees",
+                  "type": "BigUint",
+                  "indexed": true
+              },
+              {
+                  "name": "start_time",
+                  "type": "u64",
+                  "indexed": true
+              },
+              {
+                  "name": "end_time",
+                  "type": "u64",
+                  "indexed": true
+              },
+              {
+                  "name": "can_cancel",
+                  "type": "bool",
+                  "indexed": true
+              },
+              {
+                  "name": "cliff",
+                  "type": "u64",
+                  "indexed": true
+              },
+              {
+                  "name": "segments",
+                  "type": "List<Segment>",
+                  "indexed": true
+              }
+          ]
+      },
+      {
+          "identifier": "claimFromStream",
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64",
+                  "indexed": true
+              },
+              {
+                  "name": "amount",
+                  "type": "BigUint",
+                  "indexed": true
+              },
+              {
+                  "name": "recipient",
+                  "type": "Address",
+                  "indexed": true
+              }
+          ]
+      },
+      {
+          "identifier": "cancelStream",
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64",
+                  "indexed": true
+              },
+              {
+                  "name": "canceled_by",
+                  "type": "Address",
+                  "indexed": true
+              },
+              {
+                  "name": "claimed_amount",
+                  "type": "BigUint",
+                  "indexed": true
+              }
+          ]
+      },
+      {
+          "identifier": "finishedStream",
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64",
+                  "indexed": true
+              }
+          ]
+      },
+      {
+          "identifier": "renounceCancelStream",
+          "inputs": [
+              {
+                  "name": "stream_id",
+                  "type": "u64",
+                  "indexed": true
+              }
+          ]
+      }
   ],
   "hasCallback": true,
   "types": {
-    "BalancesAfterCancel": {
-      "type": "struct",
-      "fields": [
-        {
-          "name": "sender_balance",
-          "type": "BigUint"
-        },
-        {
-          "name": "recipient_balance",
-          "type": "BigUint"
-        }
-      ]
-    },
-    "BrokerFee": {
-      "type": "struct",
-      "fields": [
-        {
-          "name": "address",
-          "type": "Address"
-        },
-        {
-          "name": "fee",
-          "type": "BigUint"
-        }
-      ]
-    },
-    "Segment": {
-      "type": "struct",
-      "fields": [
-        {
-          "name": "amount",
-          "type": "BigUint"
-        },
-        {
-          "name": "exponent",
-          "type": "u32"
-        },
-        {
-          "name": "duration",
-          "type": "u64"
-        }
-      ]
-    },
-    "Status": {
-      "type": "enum",
-      "variants": [
-        {
-          "name": "Pending",
-          "discriminant": 0
-        },
-        {
-          "name": "InProgress",
-          "discriminant": 1
-        },
-        {
-          "name": "Canceled",
-          "discriminant": 2
-        },
-        {
-          "name": "Settled",
-          "discriminant": 3
-        },
-        {
-          "name": "Finished",
-          "discriminant": 4
-        }
-      ]
-    },
-    "Stream": {
-      "type": "struct",
-      "fields": [
-        {
-          "name": "sender",
-          "type": "Address"
-        },
-        {
-          "name": "nft_nonce",
-          "type": "u64"
-        },
-        {
-          "name": "payment_token",
-          "type": "EgldOrEsdtTokenIdentifier"
-        },
-        {
-          "name": "payment_nonce",
-          "type": "u64"
-        },
-        {
-          "name": "deposit",
-          "type": "BigUint"
-        },
-        {
-          "name": "claimed_amount",
-          "type": "BigUint"
-        },
-        {
-          "name": "can_cancel",
-          "type": "bool"
-        },
-        {
-          "name": "start_time",
-          "type": "u64"
-        },
-        {
-          "name": "end_time",
-          "type": "u64"
-        },
-        {
-          "name": "cliff",
-          "type": "u64"
-        },
-        {
-          "name": "segments",
-          "type": "List<Segment>"
-        },
-        {
-          "name": "balances_after_cancel",
-          "type": "Option<BalancesAfterCancel>"
-        }
-      ]
-    }
+      "AggregatorStep": {
+          "type": "struct",
+          "fields": [
+              {
+                  "name": "token_in",
+                  "type": "TokenIdentifier"
+              },
+              {
+                  "name": "token_out",
+                  "type": "TokenIdentifier"
+              },
+              {
+                  "name": "amount_in",
+                  "type": "BigUint"
+              },
+              {
+                  "name": "pool_address",
+                  "type": "Address"
+              },
+              {
+                  "name": "function_name",
+                  "type": "bytes"
+              },
+              {
+                  "name": "arguments",
+                  "type": "List<bytes>"
+              }
+          ]
+      },
+      "BalancesAfterCancel": {
+          "type": "struct",
+          "fields": [
+              {
+                  "name": "sender_balance",
+                  "type": "BigUint"
+              },
+              {
+                  "name": "recipient_balance",
+                  "type": "BigUint"
+              }
+          ]
+      },
+      "BrokerFee": {
+          "type": "struct",
+          "fields": [
+              {
+                  "name": "address",
+                  "type": "Address"
+              },
+              {
+                  "name": "fee",
+                  "type": "BigUint"
+              }
+          ]
+      },
+      "Segment": {
+          "type": "struct",
+          "fields": [
+              {
+                  "name": "amount",
+                  "type": "BigUint"
+              },
+              {
+                  "name": "exponent",
+                  "type": "u32"
+              },
+              {
+                  "name": "duration",
+                  "type": "u64"
+              }
+          ]
+      },
+      "Status": {
+          "type": "enum",
+          "variants": [
+              {
+                  "name": "Pending",
+                  "discriminant": 0
+              },
+              {
+                  "name": "InProgress",
+                  "discriminant": 1
+              },
+              {
+                  "name": "Canceled",
+                  "discriminant": 2
+              },
+              {
+                  "name": "Settled",
+                  "discriminant": 3
+              },
+              {
+                  "name": "Finished",
+                  "discriminant": 4
+              }
+          ]
+      },
+      "Stream": {
+          "type": "struct",
+          "fields": [
+              {
+                  "name": "sender",
+                  "type": "Address"
+              },
+              {
+                  "name": "nft_nonce",
+                  "type": "u64"
+              },
+              {
+                  "name": "payment_token",
+                  "type": "EgldOrEsdtTokenIdentifier"
+              },
+              {
+                  "name": "payment_nonce",
+                  "type": "u64"
+              },
+              {
+                  "name": "deposit",
+                  "type": "BigUint"
+              },
+              {
+                  "name": "claimed_amount",
+                  "type": "BigUint"
+              },
+              {
+                  "name": "can_cancel",
+                  "type": "bool"
+              },
+              {
+                  "name": "start_time",
+                  "type": "u64"
+              },
+              {
+                  "name": "end_time",
+                  "type": "u64"
+              },
+              {
+                  "name": "cliff",
+                  "type": "u64"
+              },
+              {
+                  "name": "segments",
+                  "type": "List<Segment>"
+              },
+              {
+                  "name": "balances_after_cancel",
+                  "type": "Option<BalancesAfterCancel>"
+              }
+          ]
+      },
+      "TokenAmount": {
+          "type": "struct",
+          "docs": [
+              "\\n * Ash Aggregator Structs\\n "
+          ],
+          "fields": [
+              {
+                  "name": "token",
+                  "type": "TokenIdentifier"
+              },
+              {
+                  "name": "amount",
+                  "type": "BigUint"
+              }
+          ]
+      }
   }
 }
